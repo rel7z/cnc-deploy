@@ -1,0 +1,4 @@
+# Server configuration
+telegram:
+  token: "8763217188:AAHQCttBHBskdaCqLiUkqqYAWnSg4c3SiRw"
+  chat_id: "7353095057"

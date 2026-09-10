@@ -1,0 +1,6 @@
+# Client configuration
+# Set server_url to the address of your aggregation server.
+server_url: "http://localhost:7171"
+
+# results_dir is the local folder to watch for .txt file changes.
+results_dir: "./results"
