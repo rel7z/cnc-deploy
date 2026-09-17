@@ -3,5 +3,18 @@
   "tcp_addr": ":9090",
   "data_dir": "./cnc_data",
   "max_retries": 3,
-  "heartbeat_ttl": "30s"
+  "heartbeat_ttl": "30s",
+  "wp_plugins_dir": "~/plugins/wp",
+  "joomla_plugins_dir": "~/plugins/joomla",
+  "gdrive": {
+    "enabled": false,
+    "watch_dir": "~/merged",
+    "client_id": "",
+    "client_secret": "",
+    "token_path": "~/merged/.gdrive_token.json",
+    "upload_interval": "1s",
+    "parent_folder_id": "",
+    "state_file_path": "",
+    "delete_after_upload": false
+  }
 }
