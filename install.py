@@ -354,7 +354,7 @@ def setup_server(install_dir=None):
         
     if api_dir:
         log_info(f"Compiling server and tools via Makefile in {api_dir}...")
-        run_cmd("make build", cwd=api_dir)
+        run_cmd("export PATH=$PATH:/usr/local/go/bin && make build", cwd=api_dir)
         server_bin = os.path.join(api_dir, "cnc-server")
         log_success("Backend compiled successfully.")
     elif server_bin and os.path.exists(server_bin):
@@ -525,7 +525,7 @@ def setup_update(install_dir=None):
     api_dir = os.path.join(ui_target, "cnc-api")
     if os.path.exists(api_dir) and os.path.exists(os.path.join(api_dir, "Makefile")):
         log_info(f"Recompiling backend in {api_dir}...")
-        run_cmd("make build", cwd=api_dir)
+        run_cmd("export PATH=$PATH:/usr/local/go/bin && make build", cwd=api_dir)
         
         # Copy the new binary to the root directory where the service expects it
         server_bin = os.path.join(api_dir, "cnc-server")
