@@ -463,6 +463,62 @@ def setup_worker(install_dir=None, server_addr=None):
     print(f"  • Concurrency   : {max_tasks} tasks")
     print(f"  • Start Manual  : cd {install_dir} && ./cnc-worker-linux\n")
 
+# ── Role 3: Update Existing Installation ──────────────────────────────────────
+def setup_update(install_dir=None):
+    print(f"\n{Colors.BG_BLUE}{Colors.BOLD} === UPDATE EXISTING CNC INSTALLATION === {Colors.RESET}\n")
+    if not install_dir:
+        default_dir = os.path.abspath(os.path.join(os.getcwd()))
+        if os.path.basename(default_dir) == "bin":
+            default_dir = os.path.dirname(default_dir)
+        install_dir = ask_input("Target installation directory to update", default=default_dir)
+        
+    install_dir = os.path.abspath(install_dir)
+    ui_target = os.path.join(install_dir, "cnc")
+    
+    if not os.path.exists(ui_target):
+        log_error(f"Could not find CNC repository at {ui_target}. Are you sure this is the correct installation directory?")
+        return
+
+    log_step(1, 3, "Pulling Latest Code from GitHub")
+    run_cmd("git pull origin main", cwd=ui_target)
+    log_success("Code updated.")
+
+    log_step(2, 3, "Rebuilding Server & UI")
+    api_dir = os.path.join(ui_target, "cnc-api")
+    if os.path.exists(api_dir) and os.path.exists(os.path.join(api_dir, "Makefile")):
+        log_info(f"Recompiling backend in {api_dir}...")
+        run_cmd("make build", cwd=api_dir)
+        
+        # Copy the new binary to the root directory where the service expects it
+        server_bin = os.path.join(api_dir, "cnc-server")
+        if os.path.exists(server_bin):
+            run_cmd(f"cp {server_bin} {install_dir}/cnc-server-linux")
+            log_success("Backend recompiled and binary updated.")
+    else:
+        log_warn("Could not find cnc-api directory or Makefile. Skipping backend compilation.")
+
+    ui_dir = os.path.join(ui_target, "cnc-ui")
+    if os.path.exists(ui_dir) and os.path.exists(os.path.join(ui_dir, "package.json")):
+        log_info(f"Rebuilding UI in {ui_dir}...")
+        run_cmd("npm install", cwd=ui_dir)
+        run_cmd("npm run build", cwd=ui_dir)
+        log_success("Frontend UI rebuilt successfully.")
+    else:
+        log_warn("Could not find cnc-ui directory or package.json. Skipping frontend compilation.")
+
+    log_step(3, 3, "Restarting Services")
+    sudo = "" if is_root() else "sudo "
+    if shutil.which("systemctl"):
+        run_cmd(f"{sudo}systemctl restart cnc-server || true")
+        run_cmd(f"{sudo}systemctl restart cnc-ui || true")
+        log_success("Services restarted.")
+    else:
+        log_warn("systemctl not found. Please restart your processes manually.")
+        
+    print(f"\n{Colors.GREEN}{Colors.BOLD}===================================================={Colors.RESET}")
+    print(f"{Colors.GREEN}{Colors.BOLD}  ✓ CNC Update Complete!{Colors.RESET}")
+    print(f"{Colors.GREEN}{Colors.BOLD}===================================================={Colors.RESET}\n")
+
 # ── Main Menu ─────────────────────────────────────────────────────────────────
 def interactive_menu():
     print_banner()
@@ -471,9 +527,10 @@ def interactive_menu():
     print(f"  {Colors.CYAN}2){Colors.RESET} {Colors.BOLD}CNC Worker Node{Colors.RESET}         (Distributed execution agent + Tools)")
     print(f"  {Colors.CYAN}3){Colors.RESET} {Colors.BOLD}Install Worker Tools{Colors.RESET}    (Clone and make worker-tools executable)")
     print(f"  {Colors.CYAN}4){Colors.RESET} {Colors.BOLD}Service Status & Info{Colors.RESET}   (Check systemd status of CNC components)")
-    print(f"  {Colors.CYAN}5){Colors.RESET} {Colors.BOLD}Exit{Colors.RESET}\n")
+    print(f"  {Colors.CYAN}5){Colors.RESET} {Colors.BOLD}Update Existing Node{Colors.RESET}    (Pull latest code & recompile)")
+    print(f"  {Colors.CYAN}6){Colors.RESET} {Colors.BOLD}Exit{Colors.RESET}\n")
 
-    choice = ask_input("Select an option [1-5]", default="1")
+    choice = ask_input("Select an option [1-6]", default="1")
     if choice == "1":
         setup_server()
     elif choice == "2":
@@ -488,6 +545,8 @@ def interactive_menu():
         for svc in ["cnc-server", "cnc-ui", "cnc-worker"]:
             print(f"\n--- {svc} ---")
             run_cmd(f"systemctl status {svc} --no-pager || true")
+    elif choice == "5":
+        setup_update()
     else:
         print("Exiting.")
         sys.exit(0)
