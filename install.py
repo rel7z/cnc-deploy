@@ -522,6 +522,11 @@ def setup_update(install_dir=None):
         
     install_dir = os.path.abspath(install_dir)
     
+    # Auto-adjust if they pointed to a directory that CONTAINS the worker/server folders
+    if not os.path.exists(os.path.join(install_dir, "cnc-worker-linux")) and os.path.exists(os.path.join(install_dir, "cnc-worker-node", "cnc-worker-linux")):
+        install_dir = os.path.join(install_dir, "cnc-worker-node")
+        log_info(f"Auto-detected worker installation at {install_dir}")
+        
     # Auto-detect node type based on what exists in install_dir
     ui_target = os.path.join(install_dir, "cnc")
     worker_target = os.path.join(install_dir, "cnc-worker-linux")
