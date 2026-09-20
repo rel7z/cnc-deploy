@@ -240,7 +240,7 @@ def setup_server(install_dir=None):
         ui_target = os.path.join(install_dir, "cnc")
         log_info(f"Cloning CNC Web Dashboard from https://github.com/rel7z/cnc into {ui_target}...")
         run_cmd(f"git clone https://github.com/rel7z/cnc {ui_target}")
-        ui_dir = ui_target
+        ui_dir = os.path.join(ui_target, "cnc-ui")
 
     # Step 3: Configure server_config.json
     log_step(3, total_steps, "Configuring CNC Server (server_config.json)")
