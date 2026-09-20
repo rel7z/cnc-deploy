@@ -517,6 +517,12 @@ def setup_update(install_dir=None):
     ensure_golang()
     ensure_node20()
 
+    sudo = "" if is_root() else "sudo "
+    if shutil.which("systemctl"):
+        log_info("Stopping services during update...")
+        run_cmd(f"{sudo}systemctl stop cnc-server || true")
+        run_cmd(f"{sudo}systemctl stop cnc-ui || true")
+
     log_step(1, 3, "Pulling Latest Code from GitHub")
     run_cmd("git pull origin main", cwd=ui_target)
     log_success("Code updated.")
@@ -530,7 +536,7 @@ def setup_update(install_dir=None):
         # Copy the new binary to the root directory where the service expects it
         server_bin = os.path.join(api_dir, "cnc-server")
         if os.path.exists(server_bin):
-            run_cmd(f"cp {server_bin} {install_dir}/cnc-server-linux")
+            run_cmd(f"rm -f {install_dir}/cnc-server-linux && cp {server_bin} {install_dir}/cnc-server-linux")
             log_success("Backend recompiled and binary updated.")
     else:
         log_warn("Could not find cnc-api directory or Makefile. Skipping backend compilation.")
