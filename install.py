@@ -311,9 +311,14 @@ def setup_server(install_dir=None):
     log_step(4, total_steps, "Building Server & Frontend Dashboard")
     
     # Build Backend
-    api_dir = os.path.join(install_dir, "cnc-api")
-    if os.path.exists(api_dir):
-        log_info("Compiling server and tools via Makefile...")
+    api_dir = None
+    if os.path.exists(os.path.join(install_dir, "cnc-api", "Makefile")):
+        api_dir = os.path.join(install_dir, "cnc-api")
+    elif 'ui_target' in locals() and os.path.exists(os.path.join(ui_target, "cnc-api", "Makefile")):
+        api_dir = os.path.join(ui_target, "cnc-api")
+        
+    if api_dir:
+        log_info(f"Compiling server and tools via Makefile in {api_dir}...")
         run_cmd("make build", cwd=api_dir)
         server_bin = os.path.join(api_dir, "cnc-server")
         log_success("Backend compiled successfully.")
