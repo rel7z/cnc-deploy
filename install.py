@@ -143,6 +143,40 @@ def ensure_node20():
         else:
             log_warn("Continuing without automatic Node.js installation. UI build may fail if Node is missing.")
 
+def ensure_golang():
+    """Ensure Go is installed for compiling the server and tools."""
+    if shutil.which("go"):
+        log_success(f"Go is already installed: {run_cmd('go version', capture=True)}")
+        return True
+
+    log_info("Go is required to compile the backend server and tools.")
+    install_go = ask_yes_no("Install Go 1.23.0 automatically?", default_yes=True)
+    if install_go:
+        sudo = "" if is_root() else "sudo "
+        log_info("Downloading and installing Go 1.23.0...")
+        run_cmd("wget -q -O /tmp/go.tar.gz https://go.dev/dl/go1.23.0.linux-amd64.tar.gz")
+        run_cmd(f"{sudo}rm -rf /usr/local/go && {sudo}tar -C /usr/local -xzf /tmp/go.tar.gz")
+        
+        # Add to path for the current session
+        os.environ["PATH"] += os.pathsep + "/usr/local/go/bin"
+        
+        # Add to global profile for future sessions
+        try:
+            profile_path = "/etc/profile.d/golang.sh"
+            tmp_profile = "/tmp/golang.sh"
+            with open(tmp_profile, "w") as f:
+                f.write('export PATH=$PATH:/usr/local/go/bin\n')
+            run_cmd(f"{sudo}mv {tmp_profile} {profile_path}")
+            run_cmd(f"{sudo}chmod +x {profile_path}")
+        except Exception as e:
+            log_warn(f"Could not add Go to global profile: {e}")
+            
+        log_success(f"Go installed: {run_cmd('/usr/local/go/bin/go version', capture=True)}")
+        return True
+    else:
+        log_warn("Continuing without Go. Backend compilation will fail.")
+        return False
+
 # ── Service Management ────────────────────────────────────────────────────────
 def setup_systemd_service(service_name, exec_start, working_dir, description, user=None):
     """Create and enable a systemd service."""
@@ -209,6 +243,7 @@ def setup_server(install_dir=None):
     log_step(1, total_steps, "Installing System Dependencies")
     ensure_apt_packages(["git", "curl", "wget", "jq", "build-essential", "python3"])
     ensure_node20()
+    ensure_golang()
 
     # Step 2: Repositories & Binaries
     log_step(2, total_steps, "Checking Server Binary & UI Repository")
@@ -478,6 +513,9 @@ def setup_update(install_dir=None):
     if not os.path.exists(ui_target):
         log_error(f"Could not find CNC repository at {ui_target}. Are you sure this is the correct installation directory?")
         return
+
+    ensure_golang()
+    ensure_node20()
 
     log_step(1, 3, "Pulling Latest Code from GitHub")
     run_cmd("git pull origin main", cwd=ui_target)
